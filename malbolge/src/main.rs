@@ -14,10 +14,6 @@ fn main() {
         .chars()
         .filter(|a| !a.is_whitespace())
         .collect::<Vec<_>>();
-    process_characters(&chars);
-    let letter = TABLE.chars().nth(40 - 33).unwrap();
-    println!(" El char es {}", char::from_u32((40 - 33) % 94).unwrap());
-    println!("{}", letter);
 }
 
 fn process_characters(chars: &Vec<char>) {
@@ -28,8 +24,4 @@ fn process_characters(chars: &Vec<char>) {
             println!("{}", *c as usize)
         }
     }
-}
-fn transform_char(char: &char) -> Result<char, ()> {
-    let char = TABLE.chars().nth(40 - 33).unwrap();
-    todo!()
 }
