@@ -47,6 +47,7 @@ impl Sub for TenTrit {
 
     fn sub(self, rhs: Self) -> Self::Output {
         if rhs.0 > self.0 {
+            println!("TUVEQUE HACER ESTO");
             TenTrit(rhs.0 - self.0)
         } else {
             TenTrit(self.0 - rhs.0)

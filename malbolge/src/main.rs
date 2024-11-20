@@ -1,3 +1,4 @@
+use lib_malbolge::{self, VM};
 use std::{char, env};
 fn main() {
     let args = env::args().collect::<Vec<String>>();
@@ -10,18 +11,8 @@ fn main() {
     let file_path = &args[0];
     let file = std::fs::read_to_string(file_path).expect("Error Reading the File");
 
-    let chars = file
-        .chars()
-        .filter(|a| !a.is_whitespace())
-        .collect::<Vec<_>>();
-}
+    println!("{}", file);
 
-fn process_characters(chars: &Vec<char>) {
-    for c in chars {
-        if (*c as usize) < 33 || (*c as usize) > 126 {
-            println!("{} NOOOO", c);
-        } else {
-            println!("{}", *c as usize)
-        }
-    }
+    let mut vm = VM::load(file).unwrap();
+    vm.exec();
 }
