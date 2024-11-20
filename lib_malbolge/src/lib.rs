@@ -12,6 +12,12 @@ pub struct VM {
     pub register_d: TenTrit,
     pub memory: [TenTrit; 59_049],
 }
+pub enum ExecState {
+    InstructionExecuted,
+    Input,
+    Output(u8),
+    Finished,
+}
 
 impl VM {
     const INSTRUCTIONS: &str = "i</*jpov";
@@ -40,7 +46,11 @@ impl VM {
                 .unwrap();
             match VM::INSTRUCTIONS.find(op_code) {
                 Some(_translation) => memory.push(TenTrit::new(*letter as u16)),
-                None => return Err(()),
+                None => {
+                    println!("{}", letter);
+                    println!("not a valid");
+                    return Err(());
+                }
             }
         }
 
@@ -92,78 +102,70 @@ impl VM {
         });
         crazy
     }
-
-    pub fn exec(&mut self) {
-        loop {
-            let instruction =
-                (self.memory[usize::from(self.register_c)].get() - 33 + self.register_c.get()) % 94;
-            let op_code = XLAT1.chars().nth(instruction as usize).unwrap();
-
-            match op_code {
-                'i' => {
-                    // C = [D] or jmp [d]
-                    self.register_c = self.memory[usize::from(self.register_d)];
-
-                    self.post_execution_increase();
-                }
-                '<' => {
-                    // PRINT(A%256)
-                    // TODO: impl to_ascii_char for TRIT
-                    print!(
-                        "{}",
-                        char::from_u32((self.register_a.get() % 256) as u32).unwrap()
-                    );
-                    self.post_execution_increase();
-                }
-                '/' => {
-                    let mut buf: [u8; 1] = Default::default();
-                    let mut stdin = std::io::stdin();
-                    let handle = stdin.read(&mut buf).unwrap();
-
-                    let input = buf[0] as u16;
-
-                    if handle == 0 {
-                        //EOF
-                        println!("EOF");
-                        self.register_a = TenTrit::MAX;
-                    } else {
-                        self.register_a = TenTrit::new(input);
-                    }
-                    self.post_execution_increase();
-                }
-                '*' => {
-                    // A = [D] = ROTATE_RIGHT([D])
-                    let rotate = self.memory[self.register_d.get() as usize].get();
-                    let rotate = TenTrit::new(rotate / 3 + rotate % 3 * 19683);
-
-                    self.memory[self.register_d.get() as usize] = rotate;
-                    self.register_a = rotate;
-
-                    self.post_execution_increase();
-                }
-                'j' => {
-                    // D = [D]
-                    self.register_d = self.memory[self.register_d.get() as usize];
-                    self.post_execution_increase();
-                }
-                'p' => {
-                    // A = [D] = CRAZY_OP(A, [D])
-                    let crazy = VM::crazy_op(
-                        self.register_a.get(),
-                        self.memory[self.register_d.get() as usize].get(),
-                    );
-                    self.register_a = TenTrit::new(crazy);
-                    self.memory[self.register_d.get() as usize] = TenTrit::new(crazy);
-
-                    self.post_execution_increase();
-                }
-                'v' => {
-                    return;
-                }
-                _ => {
-                    self.post_execution_increase();
-                }
-            };
+    pub fn input_instruction(&mut self, input: u8, handle_size: usize) {
+        let input = input as u16;
+        if handle_size == 0 {
+            //EOF
+            self.register_a = TenTrit::MAX;
+        } else {
+            self.register_a = TenTrit::new(input);
         }
+        self.post_execution_increase();
+    }
+
+    pub fn exec(&mut self) -> Result<ExecState, ()> {
+        let instruction =
+            (self.memory[usize::from(self.register_c)].get() - 33 + self.register_c.get()) % 94;
+        let op_code = XLAT1.chars().nth(instruction as usize).unwrap();
+
+        match op_code {
+            'i' => {
+                // C = [D] or jmp [d]
+                self.register_c = self.memory[usize::from(self.register_d)];
+                self.post_execution_increase();
+            }
+            '<' => {
+                // PRINT(A%256)
+                // TODO: impl to_ascii_char for TRIT
+                let output = (self.register_a.get() % 256) as u8;
+                self.post_execution_increase();
+                return Ok(ExecState::Output(output));
+            }
+            '/' => return Ok(ExecState::Input),
+            '*' => {
+                // A = [D] = ROTATE_RIGHT([D])
+                let rotate = self.memory[self.register_d.get() as usize].get();
+                let rotate = TenTrit::new(rotate / 3 + rotate % 3 * 19683);
+
+                self.memory[self.register_d.get() as usize] = rotate;
+                self.register_a = rotate;
+
+                self.post_execution_increase();
+            }
+            'j' => {
+                // D = [D]
+                self.register_d = self.memory[self.register_d.get() as usize];
+                self.post_execution_increase();
+            }
+            'p' => {
+                // A = [D] = CRAZY_OP(A, [D])
+                let crazy = VM::crazy_op(
+                    self.register_a.get(),
+                    self.memory[self.register_d.get() as usize].get(),
+                );
+                self.register_a = TenTrit::new(crazy);
+                self.memory[self.register_d.get() as usize] = TenTrit::new(crazy);
+
+                self.post_execution_increase();
+            }
+            'v' => {
+                return Ok(ExecState::Finished);
+            }
+            _ => {
+                self.post_execution_increase();
+            }
+        };
+
+        Ok(ExecState::InstructionExecuted)
     }
 }
