@@ -1,5 +1,4 @@
 mod ten_trit;
-use std::io::Read;
 
 use ten_trit::TenTrit;
 
@@ -27,9 +26,16 @@ impl VM {
         self.memory[self.register_c.get() as usize] =
             TenTrit::new(XLAT2.chars().nth(index).unwrap() as u16);
 
-        self.register_c = self.register_c + TenTrit::new(1);
-
-        self.register_d = self.register_d + TenTrit::new(1);
+        if self.register_c.get() == TenTrit::MAX.get() {
+            self.register_c = TenTrit::new(0);
+        } else {
+            self.register_c = self.register_c + TenTrit::new(1);
+        }
+        if self.register_d.get() == TenTrit::MAX.get() {
+            self.register_d = TenTrit::new(0);
+        } else {
+            self.register_d = self.register_d + TenTrit::new(1);
+        }
     }
 
     pub fn load(program: String) -> Result<Self, ()> {

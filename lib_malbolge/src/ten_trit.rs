@@ -1,8 +1,5 @@
 use core::panic;
-use std::{
-    ops::{Add, Sub},
-    usize,
-};
+use std::ops::{Add, Sub};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TenTrit(u16);

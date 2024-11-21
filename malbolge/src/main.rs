@@ -1,8 +1,7 @@
 use lib_malbolge::{self, VM};
 use std::{
-    char, env,
+    env,
     io::{Read, Write},
-    process::Output,
 };
 fn main() {
     let args = env::args().collect::<Vec<String>>();
@@ -18,6 +17,7 @@ fn main() {
     println!("{}", file);
 
     let mut vm = VM::load(file).unwrap();
+    let mut i = 0;
     while let Ok(state) = vm.exec() {
         match state {
             lib_malbolge::ExecState::Output(output) => {
